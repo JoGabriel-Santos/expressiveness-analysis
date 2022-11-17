@@ -1,3 +1,3 @@
 # Expressiveness Analysis
 
-Graduation thesis project
+Graduation project thesis
