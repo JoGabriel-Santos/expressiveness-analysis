@@ -1,13 +1,11 @@
-import matplotlib.pyplot as plt
 import mediapipe as mp
 import numpy as np
 import cv2 as cv
 
-from keras.models import load_model, model_from_json
+from keras.models import model_from_json
 
 
 class BodyLanguageAnalysis:
-
     MEDIA_POSE = mp.solutions.pose.Pose(min_detection_confidence=0, min_tracking_confidence=0)
 
     analyzed_frames = 0
@@ -46,11 +44,9 @@ class BodyLanguageAnalysis:
 
 
 class FacialExpressionAnalysis(object):
-
     EMOTIONS_LIST = ["Angry", "Disgust", "Fear", "Happy", "Neutral", "Sad", "Surprise"]
 
     def __init__(self, model_json_file, model_weights_file):
-
         # load model from JSON file
         with open(model_json_file, "r") as json_file:
             loaded_model_json = json_file.read()
@@ -61,8 +57,9 @@ class FacialExpressionAnalysis(object):
         self.loaded_model.make_predict_function()
 
     def predict_emotion(self, frame):
-
         global roi
+
+        facial_expressions = []
 
         facec = cv.CascadeClassifier('util/haarcascade/haarcascade_frontalface_default.xml')
 
@@ -74,9 +71,13 @@ class FacialExpressionAnalysis(object):
 
             roi = cv.resize(fc, (48, 48))
 
-        self.preds = self.loaded_model.predict(roi[np.newaxis, :, :, np.newaxis])
+            self.preds = self.loaded_model.predict(roi[np.newaxis, :, :, np.newaxis])
 
-        return FacialExpressionAnalysis.EMOTIONS_LIST[np.argmax(self.preds)]
+            emotion = FacialExpressionAnalysis.EMOTIONS_LIST[np.argmax(self.preds)]
+
+            facial_expressions.append(emotion)
+
+        return facial_expressions, [x, y, w, h]
 
 
 body_language = BodyLanguageAnalysis()
@@ -87,18 +88,21 @@ class TeacherAnalysis:
 
     def return_teacher_analysis(self, frame):
 
-        return body_language.predict_pose_landmarks(frame), facial_expression.predict_emotion(frame)
+        try:
+            return body_language.predict_pose_landmarks(frame), facial_expression.predict_emotion(frame)
+
+        except:
+            pass
 
 
 class StudentAnalysis:
 
     def return_student_analysis(self, frame):
 
-        facial_expressions = []
-        facial_expressions.append(facial_expression.predict_emotion(frame))
+        facial_expressions = facial_expression.predict_emotion(frame)[0]
 
         try:
-            return (max(set(facial_expressions), key=facial_expressions.count))
+            return max(set(facial_expressions), key=facial_expressions.count)
 
         except:
             pass
